@@ -1,0 +1,95 @@
+version: '3.7'
+services:
+  mysql:
+    image: mysql:5.7
+    ports: ['3306:3306']
+    container_name: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=symfony
+      - MYSQL_USER=symfony
+      - MYSQL_PASSWORD=password
+#    volumes:
+#      - ./data/mysql:/var/lib/mysql:cached
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    depends_on:
+      - mysql
+    ports:
+      - 90:8080
+
+  redis:
+    image: redis
+    ports: ['6380:6379']
+    container_name: redis
+#    volumes:
+#      - ./data/redis:/data:cached
+  php:
+    build: php
+    ports: ['9001:9001']
+    container_name: php
+    links:
+      - mysql
+      - redis
+    volumes:
+      - ../application/:/var/www/application:cached
+#      - ./logs/symfony:/var/www/symfony/var/log:cached
+  nginx:
+    build: nginx
+    ports: ['88:80']
+    container_name: nginx
+    links:
+      - php
+    volumes:
+      - ../application/:/var/www/application:cached
+  varnish:
+    build: varnish
+    ports: ['8080:80']
+    container_name: varnish
+    links:
+      - nginx
+
+  rabbit:
+    container_name: rabbitmq
+    hostname: rabbit
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbit
+      RABBITMQ_DEFAULT_PASS: mq
+#    volumes:
+#      - ./.data/rabbitmq/:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  elasticsearch:
+    container_name: elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.4.2
+    environment:
+      discovery.type: "single-node"
+    ports:
+      - "9200:9200"
+    networks:
+      elk_stack:
+        aliases:
+          - "elasticsearch"
+  kibana:
+    container_name: kibana
+    depends_on:
+      - elasticsearch
+    image: docker.elastic.co/kibana/kibana:7.4.2
+    environment:
+      SERVER_NAME: localhost
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    networks:
+      - elk_stack
+    ports:
+      - "81:5601"
+
+
+networks:
+  elk_stack:
+
+

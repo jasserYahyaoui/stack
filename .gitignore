@@ -1,0 +1,10 @@
+.idea
+.data
+.DS_Store
+**/.DS_Store
+###> symfony/framework-bundle ###
+./application/.env
+./application/public/bundles/
+./application/var/
+./application/vendor/
+###< symfony/framework-bundle ###
